@@ -19,8 +19,11 @@ django-cors-headers>=4.0.0
 django-filter>=23.0.0
 drf-spectacular>=0.26.0
 
-# Development/Debug (Remove in Production)
-django-debug-toolbar>=4.0.0
+# Deployment
+gunicorn
+psycopg2-binary
+whitenoise
+dj-database-url
 
 # Installation:
 # pip install -r requirements.txt
