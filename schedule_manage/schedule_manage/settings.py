@@ -28,10 +28,19 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-dev-only-chang
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,10.0.2.2').split(',')
+# Dynamically determine ALLOWED_HOSTS for Railway deployments
+# Split DJANGO_ALLOWED_HOSTS by comma, if set. Otherwise, default to local development hosts.
+ALLOWED_HOSTS_RAW = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,10.0.2.2')
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_RAW.split(',') if host.strip()]
 
-if 'RAILWAY_PUBLIC_DOMAIN' in os.environ:
-    ALLOWED_HOSTS.append(os.environ['RAILWAY_PUBLIC_DOMAIN'])
+# If running on Railway, add wildcard for Railway domains and the specific public domain
+if os.environ.get('RAILWAY_ENVIRONMENT'): # This indicates a Railway deployment
+    if '*.railway.app' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('*.railway.app') # Wildcard for all Railway subdomains
+
+    railway_public_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
+    if railway_public_domain and railway_public_domain not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(railway_public_domain)
 
 REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_CLASSES': [
