@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from datetime import timedelta
 from pathlib import Path
-
+import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -30,7 +30,7 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 # Dynamically determine ALLOWED_HOSTS for Railway deployments
 # Split DJANGO_ALLOWED_HOSTS by comma, if set. Otherwise, default to local development hosts.
-ALLOWED_HOSTS_RAW = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,10.0.2.2')
+ALLOWED_HOSTS_RAW = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,10.0.2.2',"schedule-management-production.up.railway.app")
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_RAW.split(',') if host.strip()]
 
 # If running on Railway, add wildcard for Railway domains and the specific public domain
@@ -124,7 +124,7 @@ WSGI_APPLICATION = 'schedule_manage.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-import dj_database_url
+
 
 DATABASES = {
     'default': {

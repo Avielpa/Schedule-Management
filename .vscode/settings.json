@@ -26,5 +26,6 @@
   "terminal.integrated.commandsToSkipShell": [],
   "files.associations": {
     "*.py": "python"
-  }
+  },
+  "python-envs.pythonProjects": []
 }
