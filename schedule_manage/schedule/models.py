@@ -72,15 +72,9 @@ class Soldier(models.Model):
     Soldier model - now belongs to specific event
     """
     RANK_CHOICES = [
-        ('PRIVATE', 'Private'),
-        ('CORPORAL', 'Corporal'),
-        ('SERGEANT', 'Sergeant'),
-        ('LIEUTENANT', 'Lieutenant'),
-        ('CAPTAIN', 'Captain'),
-        ('MAJOR', 'Major'),
-        ('COLONEL', 'Colonel'),
-        ('GENERAL', 'General'),
-        ('CIVILIAN', 'Civilian'),
+        ('REGULAR', 'Regular Soldier'),
+        ('SERGEANT_MAJOR', 'Sergeant Major'),
+        ('SECOND_COMMANDER', 'Second Commander'),
     ]
     
     # Event association - each soldier belongs to one event
@@ -89,7 +83,7 @@ class Soldier(models.Model):
     # Basic information
     name = models.CharField(max_length=100, verbose_name="Soldier Name")
     soldier_id = models.CharField(max_length=50, blank=True, null=True, verbose_name="Soldier ID")
-    rank = models.CharField(max_length=20, choices=RANK_CHOICES, default='PRIVATE')
+    rank = models.CharField(max_length=20, choices=RANK_CHOICES, default='REGULAR')
     
     # Soldier properties for scheduling
     is_exceptional_output = models.BooleanField(default=False, verbose_name="Leadership Role")

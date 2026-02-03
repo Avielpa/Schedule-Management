@@ -522,7 +522,7 @@ class SchedulingRunViewSet(viewsets.ModelViewSet):
                 
                 solution_data, status_code = algorithm.solve()
                 
-                if solution_data and status_code in [1, 2]:  # OPTIMAL or FEASIBLE
+                if solution_data and status_code in [2, 4]:  # FEASIBLE=2, OPTIMAL=4
                     # Save assignments
                     assignments = []
                     for soldier_name, soldier_schedule in solution_data.items():
@@ -592,19 +592,20 @@ class SchedulingRunViewSet(viewsets.ModelViewSet):
 class AssignmentViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for viewing assignments (read-only)
-    
+
     Provides filtered access to assignments:
     GET /api/assignments/
     GET /api/assignments/?scheduling_run=1
     GET /api/assignments/?soldier=1
     GET /api/assignments/?start_date=2025-01-01&end_date=2025-01-31
-    
+
     Calendar view:
     GET /api/assignments/calendar/?scheduling_run=1
     """
     queryset = Assignment.objects.all()
     serializer_class = AssignmentSerializer
     parser_classes = [JSONParser, FormParser, MultiPartParser]
+    pagination_class = None  # Return all assignments without pagination for calendar views
     
     def get_queryset(self):
         queryset = Assignment.objects.select_related('soldier', 'scheduling_run')

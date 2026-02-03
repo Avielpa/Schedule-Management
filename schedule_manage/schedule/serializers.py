@@ -58,7 +58,7 @@ class SoldierDetailSerializer(serializers.ModelSerializer):
             'id', 'event', 'event_name', 'event_id', 'name', 'soldier_id', 'rank', 'is_exceptional_output', 'is_weekend_only_soldier_flag',
             'constraints', 'constraints_data', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'event', 'created_at']
         
     def validate_event_id(self, value):
         """Validate event exists"""
@@ -164,28 +164,29 @@ class SchedulingRunListSerializer(serializers.ModelSerializer):
 
 class SchedulingRunDetailSerializer(serializers.ModelSerializer):
     """Detailed scheduling run serializer with enhanced JSON POST support"""
+    event = EventSerializer(read_only=True)
     event_name = serializers.CharField(source='event.name', read_only=True)
     event_id = serializers.IntegerField(write_only=True)
     soldiers = SoldierListSerializer(many=True, read_only=True)
     soldiers_ids = serializers.ListField(
-        child=serializers.IntegerField(), 
-        write_only=True, 
+        child=serializers.IntegerField(),
+        write_only=True,
         required=False,
         help_text="List of soldier IDs to include in this scheduling run"
     )
     soldiers_count = serializers.SerializerMethodField()
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
-    
+
     class Meta:
         model = SchedulingRun
         fields = [
             'id', 'name', 'description', 'event', 'event_name', 'event_id', 'soldiers', 'soldiers_ids',
-            'soldiers_count', 'status', 'solution_details', 'processing_time_seconds', 
+            'soldiers_count', 'status', 'solution_details', 'processing_time_seconds',
             'created_by', 'created_by_username', 'created_at'
         ]
         read_only_fields = [
-            'id', 'created_at', 'status', 'solution_details', 'processing_time_seconds', 
-            'soldiers_count', 'created_by_username'
+            'id', 'created_at', 'status', 'solution_details', 'processing_time_seconds',
+            'soldiers_count', 'created_by_username', 'event'
         ]
         
     def validate_event_id(self, value):
@@ -211,17 +212,19 @@ class SchedulingRunDetailSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create scheduling run with automatic created_by assignment"""
         soldiers_ids = validated_data.pop('soldiers_ids', [])
-        
+        event_id = validated_data.pop('event_id')
+
         # Set created_by if user is authenticated
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             validated_data['created_by'] = request.user
-            
-        scheduling_run = SchedulingRun.objects.create(**validated_data)
-        
+
+        # Create with event_id (DRF will handle the FK relationship)
+        scheduling_run = SchedulingRun.objects.create(event_id=event_id, **validated_data)
+
         if soldiers_ids:
             scheduling_run.soldiers.set(soldiers_ids)
-        
+
         return scheduling_run
     
     def update(self, instance, validated_data):
@@ -250,12 +253,13 @@ class AssignmentSerializer(serializers.ModelSerializer):
     """Serializer for assignments"""
     soldier = SoldierListSerializer(read_only=True)
     soldier_id = serializers.IntegerField(write_only=True)
+    soldier_name = serializers.CharField(source='soldier.name', read_only=True)
     scheduling_run_name = serializers.CharField(source='scheduling_run.name', read_only=True)
-    
+
     class Meta:
         model = Assignment
         fields = [
             'id', 'scheduling_run', 'scheduling_run_name', 'soldier', 'soldier_id',
-            'assignment_date', 'is_on_base'
+            'soldier_name', 'assignment_date', 'is_on_base'
         ]
-        read_only_fields = ['id', 'scheduling_run_name']
+        read_only_fields = ['id', 'scheduling_run_name', 'soldier_name']

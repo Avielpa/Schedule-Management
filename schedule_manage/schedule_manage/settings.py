@@ -20,13 +20,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
+import os
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-*x3-^jl^dqwv+8*pr^w*__h-_=_r53!!zrlyrq%l=)3+pqb2x8'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-dev-only-change-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = ['10.0.2.2', '127.0.0.1',]
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,10.0.2.2').split(',')
 
 REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_CLASSES': [
@@ -253,6 +255,10 @@ if 'corsheaders' in INSTALLED_APPS:
         "http://127.0.0.1:3000",
         "http://localhost:8080",
         "http://127.0.0.1:8080",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
     ]
 
     CORS_ALLOW_CREDENTIALS = True
@@ -361,16 +367,16 @@ if DEBUG:
 # PRODUCTION OVERRIDES
 # ==============================================================================
 
-import os
-
 if not DEBUG:
     # Production security settings
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True').lower() == 'true'
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
-    
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
     # Production database (example for PostgreSQL)
     DATABASES = {
         'default': {
@@ -382,15 +388,41 @@ if not DEBUG:
             'PORT': os.environ.get('DB_PORT', '5432'),
         }
     }
-    
+
     # Production static files
     STATIC_ROOT = BASE_DIR / 'staticfiles'
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
-    
+
     # Production media files
     MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
-    
-    # Production logging
-    LOGGING['handlers']['file']['filename'] = '/var/log/schedule_manage/django.log'
-    LOGGING['handlers']['scheduling_file']['filename'] = '/var/log/schedule_manage/scheduling.log'
+
+    # Production logging - enhanced configuration
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+                'style': '{',
+            },
+        },
+        'handlers': {
+            'console': {
+                'level': 'INFO',
+                'class': 'logging.StreamHandler',
+                'formatter': 'verbose',
+            },
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['console'],
+                'level': 'INFO',
+                'propagate': True,
+            },
+            'schedule': {
+                'handlers': ['console'],
+                'level': 'INFO',
+                'propagate': True,
+            },
+        },
+    }
