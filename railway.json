@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "python schedule_manage/manage.py migrate && gunicorn --chdir schedule_manage schedule_manage.wsgi",
+    "startCommand": "cd schedule_manage && python manage.py migrate && gunicorn schedule_manage.wsgi --bind 0.0.0.0:$PORT",
     "restartPolicyType": "ON_FAILURE"
   }
 }

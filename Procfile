@@ -1,2 +1,1 @@
-release: python schedule_manage/manage.py migrate
-web: gunicorn --chdir schedule_manage schedule_manage.wsgi
+web: cd schedule_manage && python manage.py migrate && gunicorn schedule_manage.wsgi --bind 0.0.0.0:$PORT
