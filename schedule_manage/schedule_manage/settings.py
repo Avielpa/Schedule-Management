@@ -32,14 +32,19 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 ALLOWED_HOSTS_RAW = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,10.0.2.2')
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_RAW.split(',') if host.strip()]
 
-# If running on Railway, add wildcard for Railway domains and the specific public domain
-if os.environ.get('RAILWAY_ENVIRONMENT'): # This indicates a Railway deployment
-    if '*.railway.app' not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append('*.railway.app') # Wildcard for all Railway subdomains
+# If running on Railway, add Railway domains
+if os.environ.get('RAILWAY_ENVIRONMENT'):
+    # Leading dot allows all subdomains (Django syntax, not glob)
+    if '.railway.app' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('.railway.app')
 
     railway_public_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN')
     if railway_public_domain and railway_public_domain not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(railway_public_domain)
+else:
+    # Fallback: always allow railway.app subdomains in case env var isn't set
+    if '.railway.app' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('.railway.app')
 
 REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_CLASSES': [
