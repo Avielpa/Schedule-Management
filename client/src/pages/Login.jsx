@@ -56,7 +56,7 @@ function Login() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="off">
           <div className="mb-4">
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
               Username
@@ -68,6 +68,7 @@ function Login() {
               value={formData.username}
               onChange={handleChange}
               required
+              autoComplete="off"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your username"
             />
@@ -84,6 +85,7 @@ function Login() {
               value={formData.password}
               onChange={handleChange}
               required
+              autoComplete="new-password"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your password"
             />

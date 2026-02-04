@@ -72,7 +72,7 @@ function Register() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="off">
           <div className="mb-4">
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
               Username
@@ -84,6 +84,7 @@ function Register() {
               value={formData.username}
               onChange={handleChange}
               required
+              autoComplete="off"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Choose a username"
             />
@@ -99,6 +100,7 @@ function Register() {
               name="email"
               value={formData.email}
               onChange={handleChange}
+              autoComplete="off"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="your@email.com"
             />
@@ -115,6 +117,7 @@ function Register() {
               value={formData.password}
               onChange={handleChange}
               required
+              autoComplete="new-password"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="At least 6 characters"
             />
@@ -130,6 +133,7 @@ function Register() {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
+              autoComplete="new-password"
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Repeat your password"
