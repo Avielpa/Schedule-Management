@@ -10,7 +10,6 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from datetime import timedelta
 from pathlib import Path
 import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -30,7 +29,7 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 # Dynamically determine ALLOWED_HOSTS for Railway deployments
 # Split DJANGO_ALLOWED_HOSTS by comma, if set. Otherwise, default to local development hosts.
-ALLOWED_HOSTS_RAW = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,10.0.2.2',"schedule-management-production.up.railway.app")
+ALLOWED_HOSTS_RAW = os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,10.0.2.2')
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_RAW.split(',') if host.strip()]
 
 # If running on Railway, add wildcard for Railway domains and the specific public domain
@@ -70,19 +69,16 @@ INSTALLED_APPS = [
 
 # Add optional packages if available
 try:
-    import corsheaders
     INSTALLED_APPS.append('corsheaders')
 except ImportError:
     pass
 
 try:
-    import django_filters
     INSTALLED_APPS.append('django_filters')
 except ImportError:
     pass
 
 try:
-    import drf_spectacular
     INSTALLED_APPS.append('drf_spectacular')
 except ImportError:
     pass
@@ -371,7 +367,6 @@ EXPORT_SETTINGS = {
 if DEBUG:
     # Django Debug Toolbar
     try:
-        import debug_toolbar
         INSTALLED_APPS.append('debug_toolbar')
         MIDDLEWARE.insert(1, 'debug_toolbar.middleware.DebugToolbarMiddleware')
         INTERNAL_IPS = ['127.0.0.1', '10.0.2.2']
