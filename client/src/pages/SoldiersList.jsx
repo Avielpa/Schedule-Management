@@ -28,6 +28,15 @@ const SoldiersList = () => {
     constraints_data: [],
   });
 
+  // Edit soldier state
+  const [showEditSoldier, setShowEditSoldier] = useState(false);
+  const [editingSoldier, setEditingSoldier] = useState(null);
+  const [editConstraint, setEditConstraint] = useState({
+    constraint_date: '',
+    constraint_type: 'PERSONAL',
+    description: '',
+  });
+
   const [newConstraint, setNewConstraint] = useState({
     constraint_date: '',
     constraint_type: 'PERSONAL',
@@ -119,6 +128,75 @@ const SoldiersList = () => {
     } catch (error) {
       console.error('Error creating soldier:', error);
       alert('Failed to create soldier: ' + (error.message || 'Unknown error'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Edit soldier functions
+  const handleOpenEditSoldier = async (soldier) => {
+    try {
+      // Fetch full soldier data including constraints
+      const fullSoldier = await soldierService.getById(soldier.id);
+      setEditingSoldier({
+        id: fullSoldier.id,
+        name: fullSoldier.name,
+        soldier_id: fullSoldier.soldier_id || '',
+        rank: fullSoldier.rank || 'REGULAR',
+        event_id: fullSoldier.event || '',
+        is_exceptional_output: fullSoldier.is_exceptional_output || false,
+        is_weekend_only_soldier_flag: fullSoldier.is_weekend_only_soldier_flag || false,
+        constraints_data: fullSoldier.constraints || [],
+      });
+      setShowEditSoldier(true);
+    } catch (error) {
+      console.error('Error loading soldier:', error);
+      alert('Failed to load soldier data');
+    }
+  };
+
+  const handleAddEditConstraint = () => {
+    if (!editConstraint.constraint_date) {
+      alert('Please enter a constraint date');
+      return;
+    }
+    setEditingSoldier({
+      ...editingSoldier,
+      constraints_data: [...editingSoldier.constraints_data, { ...editConstraint }],
+    });
+    setEditConstraint({ constraint_date: '', constraint_type: 'PERSONAL', description: '' });
+  };
+
+  const handleRemoveEditConstraint = (index) => {
+    setEditingSoldier({
+      ...editingSoldier,
+      constraints_data: editingSoldier.constraints_data.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleUpdateSoldier = async () => {
+    if (!editingSoldier.name) {
+      alert('Please fill in soldier name');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await soldierService.update(editingSoldier.id, {
+        name: editingSoldier.name,
+        soldier_id: editingSoldier.soldier_id,
+        rank: editingSoldier.rank,
+        is_exceptional_output: editingSoldier.is_exceptional_output,
+        is_weekend_only_soldier_flag: editingSoldier.is_weekend_only_soldier_flag,
+        constraints_data: editingSoldier.constraints_data,
+      });
+      alert('Soldier updated successfully');
+      setShowEditSoldier(false);
+      setEditingSoldier(null);
+      loadData();
+    } catch (error) {
+      console.error('Error updating soldier:', error);
+      alert('Failed to update soldier: ' + (error.message || 'Unknown error'));
     } finally {
       setSaving(false);
     }
@@ -395,6 +473,184 @@ const SoldiersList = () => {
         </div>
       )}
 
+      {/* Edit Soldier Modal */}
+      {showEditSoldier && editingSoldier && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Soldier</h2>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Soldier Name *</label>
+                  <input
+                    type="text"
+                    value={editingSoldier.name}
+                    onChange={(e) => setEditingSoldier({ ...editingSoldier, name: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="label">Soldier ID</label>
+                  <input
+                    type="text"
+                    value={editingSoldier.soldier_id}
+                    onChange={(e) => setEditingSoldier({ ...editingSoldier, soldier_id: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Event</label>
+                  <input
+                    type="text"
+                    value={events.find(e => e.id === editingSoldier.event_id)?.name || 'Unknown Event'}
+                    disabled
+                    className="input-field bg-gray-100"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Event cannot be changed after creation</p>
+                </div>
+                <div>
+                  <label className="label">Rank</label>
+                  <select
+                    value={editingSoldier.rank}
+                    onChange={(e) => setEditingSoldier({ ...editingSoldier, rank: e.target.value })}
+                    className="input-field"
+                  >
+                    {RANKS.map((rank) => (
+                      <option key={rank.value} value={rank.value}>
+                        {rank.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="edit-exceptional"
+                    checked={editingSoldier.is_exceptional_output}
+                    onChange={(e) => setEditingSoldier({ ...editingSoldier, is_exceptional_output: e.target.checked })}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <label htmlFor="edit-exceptional" className="text-sm text-gray-700">
+                    Exceptional Soldier (Leadership Role)
+                  </label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="edit-weekend"
+                    checked={editingSoldier.is_weekend_only_soldier_flag}
+                    onChange={(e) => setEditingSoldier({ ...editingSoldier, is_weekend_only_soldier_flag: e.target.checked })}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <label htmlFor="edit-weekend" className="text-sm text-gray-700">
+                    Weekend Only Soldier
+                  </label>
+                </div>
+              </div>
+
+              {/* Constraints Section */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Constraints</h3>
+
+                {/* Existing Constraints */}
+                {editingSoldier.constraints_data.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    {editingSoldier.constraints_data.map((constraint, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">
+                            {constraint.constraint_date}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {constraint.constraint_type} - {constraint.description || 'No description'}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveEditConstraint(index)}
+                          className="text-red-600 hover:text-red-700 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add New Constraint */}
+                <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
+                  <h4 className="text-sm font-semibold text-gray-700">Add Constraint</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label text-xs">Date</label>
+                      <input
+                        type="date"
+                        value={editConstraint.constraint_date}
+                        onChange={(e) => setEditConstraint({ ...editConstraint, constraint_date: e.target.value })}
+                        className="input-field text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="label text-xs">Type</label>
+                      <select
+                        value={editConstraint.constraint_type}
+                        onChange={(e) => setEditConstraint({ ...editConstraint, constraint_type: e.target.value })}
+                        className="input-field text-sm"
+                      >
+                        {CONSTRAINT_TYPES.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label text-xs">Description</label>
+                    <input
+                      type="text"
+                      value={editConstraint.description}
+                      onChange={(e) => setEditConstraint({ ...editConstraint, description: e.target.value })}
+                      className="input-field text-sm"
+                      placeholder="Optional description..."
+                    />
+                  </div>
+                  <button
+                    onClick={handleAddEditConstraint}
+                    className="btn-secondary text-sm w-full"
+                    type="button"
+                  >
+                    + Add Constraint
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditSoldier(false);
+                  setEditingSoldier(null);
+                }}
+                className="btn-secondary"
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button onClick={handleUpdateSoldier} className="btn-primary" disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bulk Import Panel */}
       {showBulkImport && (
         <div className="card bg-blue-50 border-2 border-blue-200">
@@ -543,6 +799,12 @@ const SoldiersList = () => {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => handleOpenEditSoldier(soldier)}
+                          className="text-blue-600 hover:text-blue-700 text-sm"
+                        >
+                          Edit
+                        </button>
                         <button
                           onClick={() => handleDelete(soldier.id, soldier.name)}
                           className="text-red-600 hover:text-red-700 text-sm"

@@ -56,8 +56,12 @@ const SchedulingRunsList = () => {
     }
   };
 
-  const handleExecuteAlgorithm = async (id, name) => {
-    if (!confirm(`Execute scheduling algorithm for "${name}"? This may take a few minutes.`)) {
+  const handleExecuteAlgorithm = async (id, name, isRerun = false) => {
+    const message = isRerun
+      ? `Re-run algorithm for "${name}"? This will DELETE all existing assignments and create new ones.`
+      : `Execute scheduling algorithm for "${name}"? This may take a few minutes.`;
+
+    if (!confirm(message)) {
       return;
     }
 
@@ -284,19 +288,27 @@ const SchedulingRunsList = () => {
                   )}
                   {(run.status === 'FAILURE' || run.status === 'NO_SOLUTION') && (
                     <button
-                      onClick={() => handleExecuteAlgorithm(run.id, run.name)}
+                      onClick={() => handleExecuteAlgorithm(run.id, run.name, true)}
                       className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
                     >
                       Re-run
                     </button>
                   )}
                   {run.status === 'SUCCESS' && (
-                    <Link
-                      to={`/calendar/month/${run.id}`}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-                    >
-                      Monthly View
-                    </Link>
+                    <>
+                      <button
+                        onClick={() => handleExecuteAlgorithm(run.id, run.name, true)}
+                        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+                      >
+                        Re-run
+                      </button>
+                      <Link
+                        to={`/calendar/month/${run.id}`}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
+                      >
+                        Monthly View
+                      </Link>
+                    </>
                   )}
                   {(run.status === 'SUCCESS' || run.status === 'IN_PROGRESS') && (
                     <Link

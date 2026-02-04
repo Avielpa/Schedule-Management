@@ -14,6 +14,8 @@ const MonthlyCalendarView = () => {
   const [assignments, setAssignments] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);
+  const [highlightedSoldier, setHighlightedSoldier] = useState(null);
+  const [soldierScheduleMap, setSoldierScheduleMap] = useState({});
 
   useEffect(() => {
     fetchData();
@@ -66,6 +68,67 @@ const MonthlyCalendarView = () => {
   };
 
   const assignmentsByDate = getAssignmentsByDate();
+
+  // Build soldier schedule map with transition detection
+  const buildSoldierScheduleMap = (soldierId) => {
+    const soldierAssignments = assignments
+      .filter(a => a.soldier === soldierId)
+      .sort((a, b) => a.assignment_date.localeCompare(b.assignment_date));
+
+    const scheduleMap = {};
+
+    for (let i = 0; i < soldierAssignments.length; i++) {
+      const current = soldierAssignments[i];
+      const prev = i > 0 ? soldierAssignments[i - 1] : null;
+      const next = i < soldierAssignments.length - 1 ? soldierAssignments[i + 1] : null;
+
+      const isOnBase = current.is_on_base;
+      const wasOnBasePrev = prev ? prev.is_on_base : isOnBase;
+      const willBeOnBaseNext = next ? next.is_on_base : isOnBase;
+
+      // Detect transitions
+      const isReturning = !wasOnBasePrev && isOnBase; // Was home, now on base
+      const isLeaving = isOnBase && !willBeOnBaseNext; // On base, will be home
+
+      scheduleMap[current.assignment_date] = {
+        isOnBase,
+        isReturning,
+        isLeaving,
+      };
+    }
+
+    return scheduleMap;
+  };
+
+  // Handle soldier click to highlight their schedule
+  const handleSoldierClick = (soldierId, soldierName) => {
+    if (highlightedSoldier === soldierId) {
+      // Click same soldier again - clear highlight
+      setHighlightedSoldier(null);
+      setSoldierScheduleMap({});
+    } else {
+      setHighlightedSoldier(soldierId);
+      setSoldierScheduleMap(buildSoldierScheduleMap(soldierId));
+    }
+  };
+
+  // Get highlight color for a date based on soldier schedule
+  const getHighlightStyle = (dateKey) => {
+    if (!highlightedSoldier || !soldierScheduleMap[dateKey]) return null;
+
+    const schedule = soldierScheduleMap[dateKey];
+
+    if (schedule.isReturning) {
+      return 'bg-yellow-200 border-yellow-400'; // Returning to base
+    }
+    if (schedule.isLeaving) {
+      return 'bg-orange-200 border-orange-400'; // Leaving base
+    }
+    if (schedule.isOnBase) {
+      return 'bg-green-200 border-green-400'; // On base
+    }
+    return 'bg-red-200 border-red-400'; // At home
+  };
 
   // Calendar navigation
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
@@ -134,7 +197,7 @@ const MonthlyCalendarView = () => {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-6 mb-4 p-3 bg-gray-50 rounded-lg">
+        <div className="flex flex-wrap items-center gap-6 mb-4 p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-green-500 rounded"></div>
             <span className="text-sm">On Base</span>
@@ -147,6 +210,34 @@ const MonthlyCalendarView = () => {
             <div className="w-4 h-4 bg-gray-200 rounded"></div>
             <span className="text-sm">Outside Event Range</span>
           </div>
+          {highlightedSoldier && (
+            <>
+              <div className="border-l border-gray-300 h-6 mx-2"></div>
+              <span className="text-sm font-medium text-gray-700">Highlighting soldier schedule:</span>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-green-200 border border-green-400 rounded"></div>
+                <span className="text-sm">On Base</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-red-200 border border-red-400 rounded"></div>
+                <span className="text-sm">At Home</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-yellow-200 border border-yellow-400 rounded"></div>
+                <span className="text-sm">Returning</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-orange-200 border border-orange-400 rounded"></div>
+                <span className="text-sm">Leaving</span>
+              </div>
+              <button
+                onClick={() => { setHighlightedSoldier(null); setSoldierScheduleMap({}); }}
+                className="text-sm text-blue-600 hover:text-blue-800 ml-2"
+              >
+                Clear
+              </button>
+            </>
+          )}
         </div>
 
         {/* Month Navigation */}
@@ -197,14 +288,16 @@ const MonthlyCalendarView = () => {
               const dayContent = getDayContent(date);
               const inRange = isInEventRange(date);
               const isSelected = selectedDay && format(selectedDay, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+              const dateKey = format(date, 'yyyy-MM-dd');
+              const highlightStyle = getHighlightStyle(dateKey);
 
               return (
                 <div
                   key={date.toISOString()}
                   onClick={() => inRange && dayContent && setSelectedDay(date)}
                   className={`min-h-[120px] border-b border-r p-2 transition-colors cursor-pointer
-                    ${!inRange ? 'bg-gray-100 opacity-50' : 'hover:bg-gray-50'}
-                    ${isToday(date) ? 'bg-yellow-50' : ''}
+                    ${!inRange ? 'bg-gray-100 opacity-50' : highlightStyle ? highlightStyle : 'hover:bg-gray-50'}
+                    ${isToday(date) && !highlightStyle ? 'bg-yellow-50' : ''}
                     ${isSelected ? 'ring-2 ring-blue-500 ring-inset' : ''}
                   `}
                 >
@@ -278,12 +371,20 @@ const MonthlyCalendarView = () => {
                       <div className="w-3 h-3 bg-green-500 rounded"></div>
                       On Base ({dayData.onBase.length})
                     </h4>
+                    <p className="text-xs text-gray-500 mb-2">Click a name to highlight their full schedule</p>
                     <div className="max-h-60 overflow-y-auto">
                       {dayData.onBase.length > 0 ? (
                         <ul className="space-y-1">
                           {dayData.onBase.map(a => (
-                            <li key={a.id} className="text-sm py-1 px-2 bg-green-50 rounded">
+                            <li
+                              key={a.id}
+                              onClick={(e) => { e.stopPropagation(); handleSoldierClick(a.soldier, a.soldier_name); }}
+                              className={`text-sm py-1 px-2 rounded cursor-pointer transition-colors
+                                ${highlightedSoldier === a.soldier ? 'bg-green-300 ring-2 ring-green-500' : 'bg-green-50 hover:bg-green-100'}
+                              `}
+                            >
                               {a.soldier_name || `Soldier ${a.soldier}`}
+                              {highlightedSoldier === a.soldier && <span className="ml-2 text-xs">(highlighted)</span>}
                             </li>
                           ))}
                         </ul>
@@ -299,12 +400,20 @@ const MonthlyCalendarView = () => {
                       <div className="w-3 h-3 bg-blue-500 rounded"></div>
                       At Home ({dayData.atHome.length})
                     </h4>
+                    <p className="text-xs text-gray-500 mb-2">Click a name to highlight their full schedule</p>
                     <div className="max-h-60 overflow-y-auto">
                       {dayData.atHome.length > 0 ? (
                         <ul className="space-y-1">
                           {dayData.atHome.map(a => (
-                            <li key={a.id} className="text-sm py-1 px-2 bg-blue-50 rounded">
+                            <li
+                              key={a.id}
+                              onClick={(e) => { e.stopPropagation(); handleSoldierClick(a.soldier, a.soldier_name); }}
+                              className={`text-sm py-1 px-2 rounded cursor-pointer transition-colors
+                                ${highlightedSoldier === a.soldier ? 'bg-blue-300 ring-2 ring-blue-500' : 'bg-blue-50 hover:bg-blue-100'}
+                              `}
+                            >
                               {a.soldier_name || `Soldier ${a.soldier}`}
+                              {highlightedSoldier === a.soldier && <span className="ml-2 text-xs">(highlighted)</span>}
                             </li>
                           ))}
                         </ul>
