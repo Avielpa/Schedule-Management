@@ -365,8 +365,9 @@ EXPORT_SETTINGS = {
 # ==============================================================================
 
 if DEBUG:
-    # Django Debug Toolbar
+    # Django Debug Toolbar - only add if actually installed
     try:
+        import debug_toolbar  # noqa: F401
         INSTALLED_APPS.append('debug_toolbar')
         MIDDLEWARE.insert(1, 'debug_toolbar.middleware.DebugToolbarMiddleware')
         INTERNAL_IPS = ['127.0.0.1', '10.0.2.2']
