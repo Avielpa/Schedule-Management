@@ -1,7 +1,10 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
 
 const Layout = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const user = authService.getStoredUser();
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: '📊' },
@@ -18,6 +21,11 @@ const Layout = ({ children }) => {
     return location.pathname.startsWith(path);
   };
 
+  const handleLogout = async () => {
+    await authService.logout();
+    navigate('/login');
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -32,7 +40,13 @@ const Layout = ({ children }) => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm">Admin User</span>
+              <span className="text-sm">{user?.username || 'User'}</span>
+              <button
+                onClick={handleLogout}
+                className="bg-primary-700 hover:bg-primary-800 px-3 py-1 rounded text-sm transition-colors"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>

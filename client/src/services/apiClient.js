@@ -14,9 +14,10 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Add auth token if available
+    // Django REST Framework uses "Token xxx" format (not "Bearer xxx")
     const token = localStorage.getItem('authToken');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Token ${token}`;
     }
     return config;
   },

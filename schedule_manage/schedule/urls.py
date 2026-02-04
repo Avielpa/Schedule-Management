@@ -1,9 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    EventViewSet, SoldierViewSet, SoldierConstraintViewSet, 
+    EventViewSet, SoldierViewSet, SoldierConstraintViewSet,
     SchedulingRunViewSet, AssignmentViewSet
 )
+from .auth_views import register, login, logout, me  # NEW: Auth endpoints
 
 router = DefaultRouter()
 
@@ -15,6 +16,13 @@ router.register(r'scheduling-runs', SchedulingRunViewSet)
 router.register(r'assignments', AssignmentViewSet)
 
 urlpatterns = [
+    # Auth endpoints (no token needed for register/login)
+    path('auth/register/', register, name='register'),
+    path('auth/login/', login, name='login'),
+    path('auth/logout/', logout, name='logout'),
+    path('auth/me/', me, name='me'),
+
+    # API endpoints (token required)
     path('', include(router.urls)),
 ]
 

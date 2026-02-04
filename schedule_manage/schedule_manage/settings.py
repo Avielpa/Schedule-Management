@@ -50,9 +50,14 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.UserRateThrottle',
     ],
-
+    # Authentication: How to identify who the user is
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',  # Token in header
+        'rest_framework.authentication.SessionAuthentication',  # Browser cookies (for admin)
+    ],
+    # Permission: Who is allowed to access
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny', 
+        'rest_framework.permissions.IsAuthenticated',  # Must be logged in
     ]
 }
 
@@ -69,6 +74,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',  # NEW: Creates token table for authentication
     'schedule',
 ]
 

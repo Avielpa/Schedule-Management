@@ -34,7 +34,7 @@ except ImportError as e:
 class EventViewSet(viewsets.ModelViewSet):
     """
     API endpoint for managing events with full JSON POST support
-    
+
     Supports creating events via JSON POST:
     POST /api/events/
     Content-Type: application/json
@@ -55,15 +55,16 @@ class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
     parser_classes = [JSONParser, FormParser, MultiPartParser]
-    
+
     def get_queryset(self):
-        queryset = Event.objects.all()
-        
+        # IMPORTANT: Only return events created by the logged-in user
+        queryset = Event.objects.filter(created_by=self.request.user)
+
         # Filter by event type
         event_type = self.request.query_params.get('event_type')
         if event_type:
             queryset = queryset.filter(event_type=event_type)
-        
+
         # Filter by date range
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
@@ -71,8 +72,12 @@ class EventViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(start_date__gte=start_date)
         if end_date:
             queryset = queryset.filter(end_date__lte=end_date)
-        
+
         return queryset.order_by('-created_at')
+
+    def perform_create(self, serializer):
+        # Auto-assign the logged-in user as the creator
+        serializer.save(created_by=self.request.user)
 
 
 class SoldierViewSet(viewsets.ModelViewSet):
@@ -120,27 +125,30 @@ class SoldierViewSet(viewsets.ModelViewSet):
         return SoldierSerializer
     
     def get_queryset(self):
-        queryset = Soldier.objects.select_related('event')
-        
+        # IMPORTANT: Only return soldiers from events owned by the logged-in user
+        queryset = Soldier.objects.select_related('event').filter(
+            event__created_by=self.request.user
+        )
+
         # Filter by event (important!)
         event_id = self.request.query_params.get('event')
         if event_id:
             queryset = queryset.filter(event_id=event_id)
-        
+
         # Filter by rank
         rank = self.request.query_params.get('rank')
         if rank:
             queryset = queryset.filter(rank=rank)
-        
+
         # Filter by special flags
         is_exceptional = self.request.query_params.get('is_exceptional')
         if is_exceptional is not None:
             queryset = queryset.filter(is_exceptional_output=is_exceptional.lower() == 'true')
-        
+
         is_weekend_only = self.request.query_params.get('is_weekend_only')
         if is_weekend_only is not None:
             queryset = queryset.filter(is_weekend_only_soldier_flag=is_weekend_only.lower() == 'true')
-        
+
         return queryset.order_by('event', 'rank', 'name')
     
     @action(detail=False, methods=['post'])
@@ -395,18 +403,21 @@ class SoldierConstraintViewSet(viewsets.ModelViewSet):
     parser_classes = [JSONParser, FormParser, MultiPartParser]
     
     def get_queryset(self):
-        queryset = SoldierConstraint.objects.select_related('soldier')
-        
+        # IMPORTANT: Only return constraints for soldiers in events owned by the user
+        queryset = SoldierConstraint.objects.select_related('soldier', 'soldier__event').filter(
+            soldier__event__created_by=self.request.user
+        )
+
         # Filter by soldier
         soldier_id = self.request.query_params.get('soldier')
         if soldier_id:
             queryset = queryset.filter(soldier_id=soldier_id)
-        
+
         # Filter by constraint type
         constraint_type = self.request.query_params.get('constraint_type')
         if constraint_type:
             queryset = queryset.filter(constraint_type=constraint_type)
-        
+
         # Filter by date range
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
@@ -414,7 +425,7 @@ class SoldierConstraintViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(constraint_date__gte=start_date)
         if end_date:
             queryset = queryset.filter(constraint_date__lte=end_date)
-        
+
         return queryset.order_by('constraint_date')
 
 
@@ -443,19 +454,26 @@ class SchedulingRunViewSet(viewsets.ModelViewSet):
         return SchedulingRunSerializer
     
     def get_queryset(self):
-        queryset = SchedulingRun.objects.select_related('event', 'created_by').prefetch_related('soldiers')
-        
+        # IMPORTANT: Only return scheduling runs created by the logged-in user
+        queryset = SchedulingRun.objects.select_related('event', 'created_by').prefetch_related('soldiers').filter(
+            created_by=self.request.user
+        )
+
         # Filter by event
         event_id = self.request.query_params.get('event')
         if event_id:
             queryset = queryset.filter(event_id=event_id)
-        
+
         # Filter by status
         status_filter = self.request.query_params.get('status')
         if status_filter:
             queryset = queryset.filter(status=status_filter)
-        
+
         return queryset.order_by('-created_at')
+
+    def perform_create(self, serializer):
+        # Auto-assign the logged-in user as the creator
+        serializer.save(created_by=self.request.user)
     
     @action(detail=True, methods=['post'])
     def execute_algorithm(self, request, pk=None):
@@ -608,18 +626,21 @@ class AssignmentViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None  # Return all assignments without pagination for calendar views
     
     def get_queryset(self):
-        queryset = Assignment.objects.select_related('soldier', 'scheduling_run')
-        
+        # IMPORTANT: Only return assignments from scheduling runs owned by the user
+        queryset = Assignment.objects.select_related('soldier', 'scheduling_run').filter(
+            scheduling_run__created_by=self.request.user
+        )
+
         # Filter by scheduling run
         scheduling_run_id = self.request.query_params.get('scheduling_run')
         if scheduling_run_id:
             queryset = queryset.filter(scheduling_run_id=scheduling_run_id)
-        
+
         # Filter by soldier
         soldier_id = self.request.query_params.get('soldier')
         if soldier_id:
             queryset = queryset.filter(soldier_id=soldier_id)
-        
+
         # Filter by date range
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
@@ -627,12 +648,12 @@ class AssignmentViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(assignment_date__gte=start_date)
         if end_date:
             queryset = queryset.filter(assignment_date__lte=end_date)
-        
+
         # Filter by assignment type
         is_on_base = self.request.query_params.get('is_on_base')
         if is_on_base is not None:
             queryset = queryset.filter(is_on_base=is_on_base.lower() == 'true')
-        
+
         return queryset.order_by('assignment_date', 'soldier__name')
     
     @action(detail=False, methods=['get'])
