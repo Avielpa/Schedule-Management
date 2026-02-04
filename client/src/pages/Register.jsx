@@ -44,7 +44,16 @@ function Register() {
       await authService.register(formData.username, formData.password, formData.email);
       navigate('/'); // Go to dashboard after registration
     } catch (err) {
-      setError(err.error || 'Registration failed. Please try again.');
+      // Handle different error types with user-friendly messages
+      if (typeof err === 'string' && err.includes('No response from server')) {
+        setError('Cannot connect to server. Please check your internet connection or try again later.');
+      } else if (err.error) {
+        setError(err.error);
+      } else if (typeof err === 'string') {
+        setError(err);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -142,6 +151,16 @@ function Register() {
             Login here
           </Link>
         </p>
+
+        {/* User tips */}
+        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h4 className="text-sm font-medium text-blue-800 mb-2">Tips:</h4>
+          <ul className="text-xs text-blue-700 space-y-1">
+            <li>• Username must be unique</li>
+            <li>• Password must be at least 6 characters</li>
+            <li>• Your data is private - only you can see your events and schedules</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

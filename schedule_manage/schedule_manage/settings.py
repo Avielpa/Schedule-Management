@@ -279,6 +279,7 @@ if 'drf_spectacular' in INSTALLED_APPS:
 # Only set CORS settings if corsheaders is available
 if 'corsheaders' in INSTALLED_APPS:
     CORS_ALLOWED_ORIGINS = [
+        # Local development
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8080",
@@ -288,6 +289,15 @@ if 'corsheaders' in INSTALLED_APPS:
         "http://localhost:5174",
         "http://127.0.0.1:5174",
     ]
+
+    # Add production frontend URL from environment variable
+    frontend_url = os.environ.get('FRONTEND_URL')
+    if frontend_url and frontend_url not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(frontend_url)
+
+    # Allow all Railway subdomains in production
+    if os.environ.get('RAILWAY_ENVIRONMENT'):
+        CORS_ALLOW_ALL_ORIGINS = True  # Allow all origins on Railway (simpler for deployment)
 
     CORS_ALLOW_CREDENTIALS = True
 

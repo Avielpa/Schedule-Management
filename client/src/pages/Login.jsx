@@ -28,7 +28,16 @@ function Login() {
       await authService.login(formData.username, formData.password);
       navigate('/'); // Go to dashboard after login
     } catch (err) {
-      setError(err.error || 'Login failed. Please check your credentials.');
+      // Handle different error types with user-friendly messages
+      if (typeof err === 'string' && err.includes('No response from server')) {
+        setError('Cannot connect to server. Please check your internet connection or try again later.');
+      } else if (err.error) {
+        setError(err.error);
+      } else if (typeof err === 'string') {
+        setError(err);
+      } else {
+        setError('Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -95,6 +104,14 @@ function Login() {
             Register here
           </Link>
         </p>
+
+        {/* User tips */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Note:</h4>
+          <p className="text-xs text-gray-600">
+            Your account keeps your schedules private. Only you can see and manage your own events, soldiers, and scheduling runs.
+          </p>
+        </div>
       </div>
     </div>
   );
