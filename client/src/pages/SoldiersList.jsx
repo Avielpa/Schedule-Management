@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { soldierService, eventService } from '../services';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { RANKS, CONSTRAINT_TYPES } from '../config/api';
 
 const SoldiersList = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [soldiers, setSoldiers] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
-  const [eventFilter, setEventFilter] = useState('');
+  const [eventFilter, setEventFilter] = useState(searchParams.get('event') || '');
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [showAddSoldier, setShowAddSoldier] = useState(false);
   const [bulkImportData, setBulkImportData] = useState('');
-  const [selectedEvent, setSelectedEvent] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState(searchParams.get('event') || '');
   const [importing, setImporting] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -46,6 +47,19 @@ const SoldiersList = () => {
   useEffect(() => {
     loadData();
   }, [eventFilter]);
+
+  // Auto-open add soldier modal if coming from event creation
+  useEffect(() => {
+    if (searchParams.get('addNew') === 'true') {
+      const eventId = searchParams.get('event');
+      if (eventId) {
+        setNewSoldier(prev => ({ ...prev, event_id: eventId }));
+        setShowAddSoldier(true);
+        // Clear the URL params
+        setSearchParams({});
+      }
+    }
+  }, [searchParams]);
 
   const loadData = async () => {
     try {

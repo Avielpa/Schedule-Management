@@ -13,6 +13,8 @@ const EventForm = () => {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [validation, setValidation] = useState(null);
+  const [showAddSoldiersPrompt, setShowAddSoldiersPrompt] = useState(false);
+  const [createdEventId, setCreatedEventId] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -103,11 +105,12 @@ const EventForm = () => {
       if (isEdit) {
         await eventService.update(id, formData);
         alert('Event updated successfully');
+        navigate('/events');
       } else {
-        await eventService.create(formData);
-        alert('Event created successfully');
+        const createdEvent = await eventService.create(formData);
+        setCreatedEventId(createdEvent.id);
+        setShowAddSoldiersPrompt(true);
       }
-      navigate('/events');
     } catch (error) {
       console.error('Error saving event:', error);
       alert('Failed to save event: ' + (error.message || 'Unknown error'));
@@ -398,6 +401,33 @@ const EventForm = () => {
           </button>
         </div>
       </form>
+
+      {/* Add Soldiers Prompt Modal */}
+      {showAddSoldiersPrompt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
+            <div className="text-5xl mb-4">🎉</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Event Created!</h2>
+            <p className="text-gray-600 mb-6">
+              Your event has been created successfully. Would you like to add soldiers to this event now?
+            </p>
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => navigate('/events')}
+                className="btn-secondary"
+              >
+                Later
+              </button>
+              <button
+                onClick={() => navigate(`/soldiers?event=${createdEventId}&addNew=true`)}
+                className="btn-primary"
+              >
+                Add Soldiers Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

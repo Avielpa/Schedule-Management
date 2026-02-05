@@ -72,19 +72,22 @@ class SoldierDetailSerializer(serializers.ModelSerializer):
         """Validate soldier_id uniqueness within event"""
         soldier_id = data.get('soldier_id')
         event_id = data.get('event_id')
-        
+
         if soldier_id and event_id:
-            # Check if soldier_id already exists for this event
-            if Soldier.objects.filter(soldier_id=soldier_id, event_id=event_id).exists():
+            # Check if soldier_id already exists for this event (exclude current instance for updates)
+            queryset = Soldier.objects.filter(soldier_id=soldier_id, event_id=event_id)
+            if self.instance:
+                queryset = queryset.exclude(id=self.instance.id)
+            if queryset.exists():
                 raise serializers.ValidationError({"soldier_id": "Soldier with this ID already exists in this event"})
-        
+
         return data
     
     def create(self, validated_data):
         """Create soldier with optional constraints"""
         constraints_data = validated_data.pop('constraints_data', [])
         soldier = Soldier.objects.create(**validated_data)
-        
+
         # Create constraints if provided
         for constraint_data in constraints_data:
             constraint_serializer = SoldierConstraintSerializer(data={
@@ -93,8 +96,34 @@ class SoldierDetailSerializer(serializers.ModelSerializer):
             })
             if constraint_serializer.is_valid():
                 constraint_serializer.save()
-        
+
         return soldier
+
+    def update(self, instance, validated_data):
+        """Update soldier with optional constraints replacement"""
+        constraints_data = validated_data.pop('constraints_data', None)
+
+        # Update soldier fields
+        for attr, value in validated_data.items():
+            if attr != 'event_id':  # Don't allow changing event
+                setattr(instance, attr, value)
+        instance.save()
+
+        # If constraints_data provided, replace all constraints
+        if constraints_data is not None:
+            # Delete existing constraints
+            instance.constraints.all().delete()
+
+            # Create new constraints
+            for constraint_data in constraints_data:
+                SoldierConstraint.objects.create(
+                    soldier=instance,
+                    constraint_date=constraint_data.get('constraint_date'),
+                    constraint_type=constraint_data.get('constraint_type', 'PERSONAL'),
+                    description=constraint_data.get('description', '')
+                )
+
+        return instance
 
 
 # For backward compatibility

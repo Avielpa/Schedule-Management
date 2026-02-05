@@ -521,8 +521,24 @@ class SchedulingRunViewSet(viewsets.ModelViewSet):
             
             # Get parameters from event
             event = scheduling_run.event
-            base_days = event.base_days_per_soldier or 30
-            home_days = event.home_days_per_soldier or 25
+
+            # Calculate total days for the event
+            total_days = (event.end_date - event.start_date).days + 1
+
+            # If base/home days not set, calculate reasonable defaults based on event duration
+            if event.base_days_per_soldier and event.home_days_per_soldier:
+                base_days = event.base_days_per_soldier
+                home_days = event.home_days_per_soldier
+            else:
+                # Default: roughly 60% on base, 40% home (common military pattern)
+                base_days = event.base_days_per_soldier if event.base_days_per_soldier else int(total_days * 0.6)
+                home_days = event.home_days_per_soldier if event.home_days_per_soldier else total_days - base_days
+
+            # Ensure base + home doesn't exceed total days
+            if base_days + home_days > total_days:
+                logger.warning(f"Adjusting base/home days: {base_days}+{home_days}={base_days+home_days} > {total_days} total days")
+                base_days = int(total_days * 0.6)
+                home_days = total_days - base_days
             
             # Run the algorithm
             if SmartScheduleSoldiers:
